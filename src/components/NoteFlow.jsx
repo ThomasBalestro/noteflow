@@ -186,45 +186,6 @@ const WELCOME_NOTE = {
 
 // ─── Bloc texte générique ─────────────────────────────────────────────────────
 
-function TextBlock({ block, onChange, onKeyDown, onFocus, focusRef, dark }) {
-  const ref = focusRef || useRef()
-
-  useEffect(() => {
-    if (ref.current && ref.current.textContent !== block.content) {
-      ref.current.textContent = block.content
-    }
-  }, [block.id])
-
-  const handleInput = () => {
-    onChange(block.id, { content: ref.current.textContent })
-  }
-
-  const cls = {
-    heading1: 'block-h1', heading2: 'block-h2',
-    paragraph: 'block-p', bullet: 'block-bullet',
-    numbered: 'block-numbered', quote: 'block-quote',
-  }[block.type] || 'block-p'
-
-  const Tag = { heading1: 'h1', heading2: 'h2' }[block.type] || 'div'
-
-  return (
-    <Tag
-      ref={ref}
-      contentEditable
-      suppressContentEditableWarning
-      className={`block ${cls}`}
-      onInput={handleInput}
-      onKeyDown={onKeyDown}
-      onFocus={onFocus}
-      data-placeholder={{
-        heading1: 'Titre principal...', heading2: 'Titre secondaire...',
-        paragraph: 'Écrivez quelque chose...', bullet: 'Élément de liste...',
-        numbered: 'Élément numéroté...', quote: 'Citation...',
-      }[block.type] || 'Écrivez...'}
-    />
-  )
-}
-
 // ─── Case à cocher ────────────────────────────────────────────────────────────
 
 function CheckboxBlock({ block, onChange, onKeyDown, onFocus, dark }) {
@@ -634,7 +595,7 @@ function BlockEditor({ blocks, onChange, dark, noteColor }) {
               <TextBlock block={block} onChange={updateBlock}
                 onKeyDown={makeKeyHandler(block, index)}
                 onFocus={() => setFocusedBlockId(block.id)}
-                focusRef={{ current: null, set: el => { blockRefs.current[block.id] = el } }}
+                setRef={el => { blockRefs.current[block.id] = el }}
                 dark={dark} />
             )}
           </div>
@@ -659,12 +620,8 @@ function BlockEditor({ blocks, onChange, dark, noteColor }) {
   )
 }
 
-// Wrapper pour les refs des blocs texte
-function TextBlock({ block, onChange, onKeyDown, onFocus, focusRef, dark }) {
-  const innerRef = useRef()
-  const ref = innerRef
-
-  if (focusRef?.set) focusRef.set(ref.current)
+function TextBlock({ block, onChange, onKeyDown, onFocus, setRef }) {
+  const ref = useRef()
 
   useEffect(() => {
     if (ref.current && ref.current.textContent !== block.content) {
@@ -672,23 +629,17 @@ function TextBlock({ block, onChange, onKeyDown, onFocus, focusRef, dark }) {
     }
   }, [block.id])
 
-  useEffect(() => {
-    if (focusRef?.set) focusRef.set(ref.current)
-  })
-
   const cls = { heading1: 'block-h1', heading2: 'block-h2', paragraph: 'block-p', bullet: 'block-bullet', numbered: 'block-numbered', quote: 'block-quote' }[block.type] || 'block-p'
-
   const Tag = { heading1: 'h1', heading2: 'h2' }[block.type] || 'div'
-
   const placeholder = { heading1: 'Titre principal...', heading2: 'Titre secondaire...', paragraph: 'Écrivez quelque chose...', bullet: 'Élément de liste...', numbered: 'Élément numéroté...', quote: 'Citation...' }[block.type] || ''
 
   return (
     <Tag
-      ref={ref}
+      ref={el => { ref.current = el; if (setRef) setRef(el) }}
       contentEditable
       suppressContentEditableWarning
       className={`block ${cls}`}
-      onInput={() => onChange(block.id, { content: ref.current.textContent })}
+      onInput={() => onChange(block.id, { content: ref.current?.textContent || '' })}
       onKeyDown={onKeyDown}
       onFocus={onFocus}
       data-placeholder={placeholder}
